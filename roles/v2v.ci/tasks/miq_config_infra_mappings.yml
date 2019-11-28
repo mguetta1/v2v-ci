@@ -74,21 +74,21 @@
       set_fact:
         target_datastore_id: "{{ target_datastore_json.json | json_query(query) | first }}"
 
-    - name: Collect source lan ids
+    - name: Get source lan IDs
       uri:
-        url: "https://{{ inventory_hostname }}/api/lans/?filter[]=name={{ v2v_ci_source_lan | regex_replace (' ', '%20') }}&expand=resources&attributes=name"
+        url: "https://{{ inventory_hostname }}/api/clusters/{{ source_cluster_id }}?attributes=lans&expand=resources"
         user: "{{ miq_app_username }}"
         password: "{{ miq_app_password }}"
         method: GET
         validate_certs: no
-      register: lan_ids_json
+      register: source_lan_json
 
     - set_fact:
-        source_lan_query: "resources[?name=='{{ v2v_ci_source_lan }}'].id"
+        query: "lans[?name=='{{ v2v_ci_source_lan }}'].id"
 
-    - name: Extracting source lan id from JSON
+    - name: Extracting source lan ids from JSON
       set_fact:
-        source_lan_id: "{{ lan_ids_json.json | json_query(source_lan_query) }}"
+        source_lan_id: "{{ source_lan_json.json | json_query(query) }}"
 
     - name: Get target lan ID
       uri:
