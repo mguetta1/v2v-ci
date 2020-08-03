@@ -25,6 +25,40 @@
     mode: "0777"
 
 # Install Nmon requirements for RHEL 8
+- block:
+    - set_fact:
+        rhel_repo_string: "rhel_{{ ansible_distribution_version | replace('.', '') }}_x86.repo"
+
+    - set_fact:
+        rhel_repo_path: "{{ rhel_repo_dir}}{{ rhel_repo_string }}"
+        rhel_repo_url_for_wget_command: "{{ rhel_repo_url_start }}{{ rhel_repo_string }}{{ rhel_repo_url_end }}"
+
+    - name: Ensure wget package is installed
+      delegate_to: "{{ v2v_item }}"
+      yum:
+        name: wget
+        state: present
+
+    - name: Check if repo file already exist
+      delegate_to: "{{ v2v_item }}"
+      stat:
+        path: "{{ rhel_repo_path }}"
+      register: repo_file_exist
+
+    - name: download RHEL repo
+      delegate_to: "{{ v2v_item }}"
+      command: "{{ command_item }}"
+      with_items:
+        - "wget --no-check-certificate {{ rhel_repo_url_for_wget_command }} -O {{ rhel_repo_path }}"
+        - "yum clean all"
+      loop_control:
+        loop_var: command_item
+      args:
+        warn: no
+      when: repo_file_exist.stat.exists == false
+
+  when: v2v_item not in groups['ovirt_conversion_hosts']
+
 - name: Ensure ncurses packages are installed
   delegate_to: "{{ v2v_item }}"
   yum:
